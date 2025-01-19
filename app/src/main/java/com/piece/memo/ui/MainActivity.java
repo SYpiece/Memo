@@ -1,4 +1,4 @@
-package com.example.memo.ui;
+package com.piece.memo.ui;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
 class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
     public ListAdapter() {}
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -59,9 +60,10 @@ class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-
+        protected View itemView;
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            this.itemView = itemView;
         }
     }
 }
