@@ -4,7 +4,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
+
+import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,16 +20,16 @@ public class Database {
             typeKey = "TYPE_KEY",
             belongKey = "BELONG_KEY";
 
-//    protected final DatabaseOpenHelper databaseOpenHelper;
     protected final SQLiteDatabase sqLiteDatabase;
-    protected final Folder root = new Folder(0, null, "root");
+    protected final Folder root = new Folder(0, this, "root");
+
+    public Folder getRoot() {
+        return root;
+    }
 
     public Database(Context context) {
-//        databaseOpenHelper = new DatabaseOpenHelper(context);
-//        sqLiteDatabase = databaseOpenHelper.getWritableDatabase();
         sqLiteDatabase = context.openOrCreateDatabase("database.db", Context.MODE_PRIVATE, null);
         createDatabase();
-        readDatabase();
     }
 
     private void createDatabase() {
@@ -46,85 +47,21 @@ public class Database {
                 ");");
     }
 
-    private void readDatabase() {
-        try (Cursor cursor = sqLiteDatabase.query(DatabaseOpenHelper.tableFileStructure, null, belongKey + " = ?", new String[] { "0" }, null, null, null)) {
-
-        }
-    }
-
-    public Folder getRoot() {
-        return root;
-    }
-
-//    private void readDatabase(Context context) {
-//        root.setExisted(true);
-//        List<Node> nodes = new LinkedList<>();
-//        try (Cursor cursor = sqLiteDatabase.query(DatabaseOpenHelper.tableFileStructure, null, null, null, null, null, null)) {
-//            if (cursor != null) {
-//                List<NodePack> nodePacks = new LinkedList<>();
-//                nodes.add(root);
-//                while (cursor.moveToFirst()) {
-//                    NodePack nodePack = new NodePack(cursor.getInt(0), cursor.getString(1), Node.Type.fromInteger(cursor.getInt(2)), cursor.getInt(3));
-//                    Node n = null;
-//                    for (Node node : nodes) {
-//                        if (node.getID() == nodePack.belong) {
-//                            n = nodePack.unpack(node);
-//                            break;
-//                        }
-//                    }
-//                    if (n == null) {
-//                        nodePacks.add(nodePack);
-//                    } else {
-//                        nodes.add(n);
-//                    }
-//                }
-//                while (!nodePacks.isEmpty()) {
-//                    NodePack nodePack = nodePacks.get(0);
-//                    nodePacks.remove(0);
-//                    Node n = null;
-//                    for (Node node : nodes) {
-//                        if (node.getID() == nodePack.belong) {
-//                            n = nodePack.unpack(node);
-//                            break;
-//                        }
-//                    }
-//                    if (n == null) {
-//                        nodePacks.add(nodePack);
-//                    } else {
-//                        nodes.add(n);
-//                    }
-//                }
-//            } else {
-//                throw new RuntimeException();
-//            }
-//        }
-//        try (Cursor cursor = sqLiteDatabase.query(DatabaseOpenHelper.tableTextStructure, null, null, null, null, null, null)) {
-//            if (cursor != null) {
-//                while (cursor.moveToFirst()) {
-//                    int id = cursor.getInt(0);
-//                    String fileName = cursor.getString(1);
-//                    for (Node node : nodes) {
-//                        if (node instanceof Text && node.getID() == id) {
-//                            ((Text) node).setFile(new File(context.getFilesDir(), fileName));
-//                            break;
-//                        }
-//                    }
-//                }
-//            } else {
-//                throw new RuntimeException();
-//            }
-//        }
-//    }
-
-    protected List<Node> queryChildren(Node node) {
-        List<Node> nodes = new ArrayList<>();
+    /**
+     * 查询指定节点的所有子节点。
+     *
+     * @param node 父节点
+     * @return 子节点列表
+     */
+    protected List<NodeBase> queryChildren(NodeBase node) {
+        List<NodeBase> nodes = new ArrayList<>();
         try (Cursor cursor = sqLiteDatabase.query(fileTable, null, belongKey + " = ?", new String[] { String.valueOf(node.getID()) }, null, null, null)) {
             if (cursor != null) {
                 while (cursor.moveToNext()) {
                     nodes.add(new NodePack(
                             cursor.getLong(cursor.getColumnIndexOrThrow(idKey)),
                             cursor.getString(cursor.getColumnIndexOrThrow(textKey)),
-                            Node.Type.fromInteger(cursor.getType(cursor.getColumnIndexOrThrow(typeKey))),
+                            NodeBase.Type.fromInteger(cursor.getType(cursor.getColumnIndexOrThrow(typeKey))),
                             cursor.getLong(cursor.getColumnIndexOrThrow(belongKey))
                     ).unpack(node));
                 }
@@ -133,10 +70,15 @@ public class Database {
         return Collections.unmodifiableList(nodes);
     }
 
-    protected void insertNode(Node node) {
+    /**
+     * 插入一个新的节点到数据库中。
+     *
+     * @param node 要插入的节点
+     */
+    protected void insertNode(@NonNull NodeBase node) {
         ContentValues values = new ContentValues();
         values.put(textKey, node.getText());
-        values.put(typeKey, Node.Type.toInteger(node.getType()));
+        values.put(typeKey, NodeBase.Type.toInteger(node.getType()));
         values.put(belongKey, node.getParent().getID());
         long id = sqLiteDatabase.insert(fileTable, null, values);
         if (id == -1) {
@@ -145,47 +87,69 @@ public class Database {
         node.setID(id);
     }
 
-    protected void updateNode(Node node) {
+    /**
+     * 更新数据库中的节点信息。
+     *
+     * @param node 要更新的节点
+     */
+    protected void updateNode(@NonNull NodeBase node) {
         ContentValues values = new ContentValues();
         values.put(textKey, node.getText());
         sqLiteDatabase.update(fileTable, values, idKey + " = ?", new String[] { String.valueOf(node.getID()) });
     }
 
-    protected void moveNode(Node node, Node parent) {
+    /**
+     * 将节点移动到新的父节点下。
+     *
+     * @param node   要移动的节点
+     * @param parent 新的父节点
+     */
+    protected void moveNode(@NonNull NodeBase node, @NonNull NodeBase parent) {
         ContentValues values = new ContentValues();
         values.put(belongKey, parent.getID());
         sqLiteDatabase.update(fileTable, values, idKey + " = ?", new String[] { String.valueOf(node.getID()) });
     }
 
-    protected void copyNode(Node node, Node parent) {
+    /**
+     * 复制节点到新的父节点下。
+     *
+     * @param node   要复制的节点
+     * @param parent 新的父节点
+     */
+    protected void copyNode(@NonNull NodeBase node, @NonNull NodeBase parent) {
         ContentValues values = new ContentValues();
         values.put(textKey, node.getText());
-        values.put(typeKey, Node.Type.toInteger(node.getType()));
+        values.put(typeKey, NodeBase.Type.toInteger(node.getType()));
         values.put(belongKey, parent.getID());
         sqLiteDatabase.insert(fileTable, null, values);
     }
 
-    protected void deleteNode(Node node) {
+    /**
+     * 从数据库中删除指定的节点。
+     *
+     * @param node 要删除的节点
+     */
+    protected void deleteNode(@NonNull NodeBase node) {
         sqLiteDatabase.delete(fileTable, idKey + " = ?", new String[] { String.valueOf(node.getID()) });
     }
 
     private static class NodePack {
         protected final long id, belong;
         protected final String name;
-        protected final Node.Type type;
+        protected final NodeBase.Type type;
 
-        public NodePack(long id, String name, Node.Type type, long belong) {
+        public NodePack(long id, @NonNull String name, @NonNull NodeBase.Type type, long belong) {
             this.id = id;
             this.name = name;
             this.type = type;
             this.belong = belong;
         }
 
-        public Node unpack(Node parent) {
+        public NodeBase unpack(@NonNull NodeBase parent) {
             if (parent.getID() != belong) {
                 throw new RuntimeException();
             }
-            Node node;
+            NodeBase node;
             switch (type) {
                 case Folder: {
                     node = new Folder(id, parent, name);
@@ -205,36 +169,5 @@ public class Database {
             }
             return node;
         }
-    }
-}
-
-class DatabaseOpenHelper extends SQLiteOpenHelper {
-    static final String
-            tableFileStructure = "FileStructure",
-            tableTextStructure = "TextStructure";
-
-    public DatabaseOpenHelper(Context context) {
-        super(context, "database.db", null, 0);
-    }
-
-    @Override
-    public void onCreate(SQLiteDatabase sqLiteDatabase) {
-        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + tableFileStructure + ";");
-        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + tableTextStructure + ";");
-        sqLiteDatabase.execSQL("CREATE TABLE " + tableFileStructure + "(" +
-                "ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "NAME TEXT NOT NULL, " +
-                "TYPE INTEGER NOT NULL, " +
-                "BELONG INTEGER NOT NULL" +
-                ");");
-        sqLiteDatabase.execSQL("CREATE TABLE " + tableTextStructure + "(" +
-                "ID INTEGER PRIMARY KEY, " +
-                "FILE TEXT NOT NULL" +
-                ");");
-    }
-
-    @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
-
     }
 }

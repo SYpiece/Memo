@@ -1,101 +1,32 @@
 package com.piece.memo.database;
 
-import java.util.List;
+import androidx.annotation.NonNull;
 
-public abstract class Node {
-    protected long id;
-    protected String text;
-    protected final Type type;
-    protected Node parent;
-    protected final Database database;
+import org.jetbrains.annotations.NotNull;
 
-    public long getID() {
-        return id;
-    }
+public interface Node {
+    long getID();
 
-    protected void setID(long id) {
-        this.id = id;
-    }
+    @NotNull
+    Node getParent();
 
-    public String getText() {
-        return text;
-    }
+    @NotNull
+    Database getDatabase();
 
-    public void setText(String text) {
-        this.text = text;
-    }
+    void create();
 
-    public Type getType() {
-        return type;
-    }
+    void update();
 
-    public Node getParent() {
-        return parent;
-    }
+    void moveTo(@NonNull Node parent);
 
-    protected void setParent(Node parent) {
-        this.parent = parent;
-    }
+    void copyTo(@NonNull Node parent);
 
-    public Database getDatabase() {
-        return database;
-    }
+    void delete();
 
-    public Node(Node parent, String text, Type type) {
-        this(-1, parent, text, type);
-    }
-
-    protected Node(long id, Node parent, String text, Type type) {
-        this.id = id;
-        this.parent = parent;
-        this.text = text;
-        this.type = type;
-        this.database = parent.getDatabase();
-    }
-
-    public void create() {
-        if (this.id != -1) {
-            throw new RuntimeException();
-        }
-        database.insertNode(this);
-    }
-
-    public void update() {
-        if (this.id == -1) {
-            throw new RuntimeException();
-        }
-        database.updateNode(this);
-    }
-
-    public void moveTo(Node parent) {
-        if (this.id == -1) {
-            throw new RuntimeException();
-        }
-        database.moveNode(this, parent);
-    }
-
-    public void copyTo(Node parent) {
-        if (this.id == -1) {
-            throw new RuntimeException();
-        }
-        database.copyNode(this, parent);
-    }
-
-    public void delete() {
-        if (this.id == -1) {
-            throw new RuntimeException();
-        }
-        database.deleteNode(this);
-    }
-
-    public List<Node> getChildren() {
-        return database.queryChildren(this);
-    }
-
-    public enum Type {
+    enum Type {
         Unknown, Folder, Text, Paragraph;
 
-        public static int toInteger(Type type) {
+        public static int toInteger(@NonNull Type type) {
             switch (type) {
                 case Folder: return 1;
                 case Text: return 2;
@@ -104,6 +35,7 @@ public abstract class Node {
             }
         }
 
+        @NonNull
         public static Type fromInteger(int i) {
             switch (i) {
                 case 1: return Folder;

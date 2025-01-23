@@ -1,12 +1,8 @@
 package com.piece.memo.ui;
 
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -15,10 +11,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.memo.R;
+import com.piece.memo.database.Database;
 
 public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ListAdapter listAdapter;
+
+    private Database database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,36 +33,10 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.itemList);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        listAdapter = new ListAdapter();
+        database = new Database(this);
+
+        listAdapter = new ListAdapter(database.getRoot());
         recyclerView.setAdapter(listAdapter);
     }
 }
 
-class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
-    public ListAdapter() {}
-
-    @NonNull
-    @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_list, parent, false);
-        return new ViewHolder(view);
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-
-    }
-
-    @Override
-    public int getItemCount() {
-        return 100;
-    }
-
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        protected View itemView;
-        public ViewHolder(@NonNull View itemView) {
-            super(itemView);
-            this.itemView = itemView;
-        }
-    }
-}
