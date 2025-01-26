@@ -1,9 +1,9 @@
 package com.piece.memo.database;
 
-import org.jetbrains.annotations.NotNull;
+import androidx.annotation.NonNull;
 
 public interface Description {
-    @NotNull
-    String getDescription();
-    void setDescription(@NotNull String description);
+    @NonNull String getDescription();
+
+    void setDescription(@NonNull String description);
 }

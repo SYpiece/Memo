@@ -11,8 +11,8 @@ public class Paragraph extends NodeBase {
         super(text, t, NodeBase.Type.Paragraph);
     }
 
-    protected Paragraph(long id, @NonNull NodeBase parent, @NonNull String text) {
-        super(id, parent, text, NodeBase.Type.Paragraph);
+    protected Paragraph(int id, int belong, @NonNull String text, @NonNull String title, @NonNull String description, @NonNull Database database) {
+        super(id, belong, text, title, description, NodeBase.Type.Paragraph, database);
     }
 
     /**
@@ -22,7 +22,7 @@ public class Paragraph extends NodeBase {
      * @throws RuntimeException 如果新的父节点不是文本类型
      */
     @Override
-    public void copyTo(@NonNull NodeBase parent) {
+    public void copyTo(@NonNull Node parent) {
         if (!(parent instanceof Text)) {
             throw new RuntimeException();
         }
@@ -36,7 +36,7 @@ public class Paragraph extends NodeBase {
      * @throws RuntimeException 如果新的父节点不是文本类型
      */
     @Override
-    public void moveTo(@NonNull NodeBase parent) {
+    public void moveTo(@NonNull Node parent) {
         if (!(parent instanceof Text)) {
             throw new RuntimeException();
         }

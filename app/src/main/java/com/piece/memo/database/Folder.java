@@ -6,18 +6,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Folder extends NodeBase {
+public class Folder extends NodeBase implements Container, Title, Description {
 
-    public Folder(@NonNull Folder parent, @NonNull String text) {
-        super(parent, text, Type.Folder);
+    public Folder(@NonNull Folder parent, @NonNull String title, @NonNull String description) {
+        super(parent, title, description, Type.Folder);
     }
 
-    protected Folder(long id, @NonNull NodeBase parent, @NonNull String text) {
-        super(id, parent, text, Type.Folder);
+    protected Folder(int id, int belong, @NonNull String text, @NonNull String title, @NonNull String description, @NonNull Database database) {
+        super(id, belong, text, title, description, Type.Folder, database);
     }
 
-    protected Folder(long id, @NonNull Database database, @NonNull String text) {
-        super(id, database, text, Type.Folder);
+    protected Folder(int id, @NonNull Database database) {
+        super(id, database, Type.Folder);
     }
 
     /**
@@ -27,9 +27,9 @@ public class Folder extends NodeBase {
      */
     @NonNull
     public List<Folder> getFolders() {
-        List<NodeBase> children = getChildren();
+        List<Node> children = getChildren();
         List<Folder> folders = new ArrayList<>(children.size());
-        for (NodeBase node : children) {
+        for (Node node : children) {
             if (node instanceof Folder) {
                 folders.add((Folder) node);
             }
@@ -44,9 +44,9 @@ public class Folder extends NodeBase {
      */
     @NonNull
     public List<Text> getTexts() {
-        List<NodeBase> children = getChildren();
+        List<Node> children = getChildren();
         List<Text> texts = new ArrayList<>(children.size());
-        for (NodeBase node : children) {
+        for (Node node : children) {
             if (node instanceof Text) {
                 texts.add((Text) node);
             }
@@ -61,7 +61,7 @@ public class Folder extends NodeBase {
      * @throws RuntimeException 如果新的父节点不是文件夹类型
      */
     @Override
-    public void moveTo(@NonNull NodeBase parent) {
+    public void moveTo(@NonNull Node parent) {
         if (!(parent instanceof Folder)) {
             throw new RuntimeException();
         }
@@ -75,10 +75,32 @@ public class Folder extends NodeBase {
      * @throws RuntimeException 如果新的父节点不是文件夹类型
      */
     @Override
-    public void copyTo(@NonNull NodeBase parent) {
+    public void copyTo(@NonNull Node parent) {
         if (!(parent instanceof Folder)) {
             throw new RuntimeException();
         }
         super.copyTo(parent);
+    }
+
+    @NonNull
+    @Override
+    public String getTitle() {
+        return super.getTitle();
+    }
+
+    @Override
+    public void setTitle(@NonNull String title) {
+        super.setTitle(title);
+    }
+
+    @NonNull
+    @Override
+    public String getDescription() {
+        return super.getDescription();
+    }
+
+    @Override
+    public void setDescription(@NonNull String description) {
+        super.setDescription(description);
     }
 }

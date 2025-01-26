@@ -1,22 +1,40 @@
 package com.piece.memo.database;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.List;
 
 public abstract class NodeBase implements Node {
-    protected long id;
-    protected String title, description, text;
+    protected int id, belong;
+    protected String title = "", description = "", text;
     protected final Type type;
-    protected Node parent;
     protected final Database database;
 
-    public long getID() {
+    public int getID() {
         return id;
     }
 
-    protected void setID(long id) {
+    protected void setID(int id) {
         this.id = id;
+    }
+
+    @NonNull
+    protected String getTitle() {
+        return title;
+    }
+
+    protected void setTitle(@NonNull String title) {
+        this.title = title;
+    }
+
+    @NonNull
+    protected String getDescription() {
+        return description;
+    }
+
+    protected void setDescription(@NonNull String description) {
+        this.description = description;
     }
 
     @NonNull
@@ -33,13 +51,13 @@ public abstract class NodeBase implements Node {
         return type;
     }
 
-    @NonNull
-    public NodeBase getParent() {
-        return parent;
+    public int getParentID() {
+        return belong;
     }
 
-    protected void setParent(@NonNull NodeBase parent) {
-        this.parent = parent;
+    @Nullable
+    public Node getParent() {
+        return database.getNode(belong);
     }
 
     @NonNull
@@ -47,21 +65,26 @@ public abstract class NodeBase implements Node {
         return database;
     }
 
-    public NodeBase(@NonNull NodeBase parent, @NonNull String text, @NonNull Type type) {
-        this(-1, parent, text, type);
+    public NodeBase(@NonNull Node parent, @NonNull String text, @NonNull Type type) {
+        this(-1, parent.getID(), text, "", "", type, parent.getDatabase());
     }
 
-    protected NodeBase(long id, @NonNull NodeBase parent, @NonNull String text, @NonNull Type type) {
+    public NodeBase(@NonNull Node parent, @NonNull String title, @NonNull String description, @NonNull Type type) {
+        this(-1, parent.getID(), "", title, description, type, parent.getDatabase());
+    }
+
+    protected NodeBase(int id, int belong, @NonNull String text, @NonNull String title, @NonNull String description, @NonNull Type type, @NonNull Database database) {
         this.id = id;
         this.text = text;
-        this.parent = parent;
+        this.title = title;
+        this.description = description;
+        this.belong = belong;
         this.type = type;
-        this.database = parent.getDatabase();
+        this.database = database;
     }
 
-    protected NodeBase(long id, @NonNull Database database, @NonNull String text, @NonNull Type type) {
+    protected NodeBase(int id, @NonNull Database database, @NonNull Type type) {
         this.id = id;
-        this.text = text;
         this.type = type;
         this.database = database;
     }
@@ -72,10 +95,10 @@ public abstract class NodeBase implements Node {
      * @throws RuntimeException 如果节点已经存在于数据库中
      */
     public void create() {
-        if (this.id != -1) {
+        if (id != -1) {
             throw new RuntimeException();
         }
-        database.insertNode(this);
+        id = database.insertNode(this);
     }
 
     /**
@@ -84,7 +107,7 @@ public abstract class NodeBase implements Node {
      * @throws RuntimeException 如果节点不存在于数据库中
      */
     public void update() {
-        if (this.id == -1) {
+        if (id == -1) {
             throw new RuntimeException();
         }
         database.updateNode(this);
@@ -96,11 +119,11 @@ public abstract class NodeBase implements Node {
      * @param parent 新的父节点
      * @throws RuntimeException 如果节点不存在于数据库中
      */
-    public void moveTo(@NonNull NodeBase parent) {
-        if (this.id == -1) {
+    public void moveTo(@NonNull Node parent) {
+        if (id == -1 || !(parent instanceof Container)) {
             throw new RuntimeException();
         }
-        database.moveNode(this, parent);
+        database.moveNode(this, (NodeBase) parent);
     }
 
     /**
@@ -109,11 +132,11 @@ public abstract class NodeBase implements Node {
      * @param parent 新的父节点
      * @throws RuntimeException 如果节点不存在于数据库中
      */
-    public void copyTo(@NonNull NodeBase parent) {
-        if (this.id == -1) {
+    public void copyTo(@NonNull Node parent) {
+        if (id == -1 || !(parent instanceof Container)) {
             throw new RuntimeException();
         }
-        database.copyNode(this, parent);
+        database.copyNode(this, (NodeBase) parent);
     }
 
     /**
@@ -122,7 +145,7 @@ public abstract class NodeBase implements Node {
      * @throws RuntimeException 如果节点不存在于数据库中
      */
     public void delete() {
-        if (this.id == -1) {
+        if (id == -1) {
             throw new RuntimeException();
         }
         database.deleteNode(this);
@@ -134,7 +157,7 @@ public abstract class NodeBase implements Node {
      * @return 子节点列表
      */
     @NonNull
-    public List<NodeBase> getChildren() {
+    public List<Node> getChildren() {
         return database.queryChildren(this);
     }
 }

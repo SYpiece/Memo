@@ -1,9 +1,10 @@
 package com.piece.memo.database;
 
-import org.jetbrains.annotations.NotNull;
+import androidx.annotation.NonNull;
 
 public interface Title {
-    @NotNull
+    @NonNull
     String getTitle();
-    void setTitle(@NotNull String title);
+
+    void setTitle(@NonNull String title);
 }

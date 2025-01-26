@@ -11,16 +11,16 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/title"
+            android:id="@+id/text_fileTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="test"
-            android:textSize="20sp" />
+            android:text="title"
+            android:textSize="18sp" />
 
         <TextView
-            android:id="@+id/text"
+            android:id="@+id/text_fileDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="text" />
+            android:text="description" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

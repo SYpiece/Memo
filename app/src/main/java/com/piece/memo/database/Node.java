@@ -1,17 +1,20 @@
 package com.piece.memo.database;
 
 import androidx.annotation.NonNull;
-
-import org.jetbrains.annotations.NotNull;
+import androidx.annotation.Nullable;
 
 public interface Node {
-    long getID();
+    int getID();
 
-    @NotNull
-    Node getParent();
+    @NonNull String getText();
 
-    @NotNull
-    Database getDatabase();
+    void setText(@NonNull String text);
+
+    @NonNull Type getType();
+
+    @Nullable Node getParent();
+
+    @NonNull Database getDatabase();
 
     void create();
 
@@ -35,9 +38,8 @@ public interface Node {
             }
         }
 
-        @NonNull
-        public static Type fromInteger(int i) {
-            switch (i) {
+        @NonNull public static Type fromInteger(int i) {
+            switch(i) {
                 case 1: return Folder;
                 case 2: return Text;
                 case 3: return Paragraph;
