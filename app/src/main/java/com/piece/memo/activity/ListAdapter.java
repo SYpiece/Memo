@@ -1,4 +1,4 @@
-package com.piece.memo.ui;
+package com.piece.memo.activity;
 
 import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
@@ -11,11 +11,10 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.piece.memo.R;
-import com.piece.memo.database.Description;
+import com.piece.memo.database.Describable;
 import com.piece.memo.database.Folder;
 import com.piece.memo.database.Node;
-import com.piece.memo.database.Text;
-import com.piece.memo.database.Title;
+import com.piece.memo.database.Nameable;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -24,9 +23,13 @@ import java.util.List;
 class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
     protected OnFolderVisitedListener onFolderVisitedListener;
     protected OnFolderLeftListener onFolderLeftListener;
-    protected OnTextVisitedListener onTextVisitedListener;
-    protected OnTextLeftListener onTextLeftListener;
+    protected OnItemClickedListener onItemClickedListener;
+    protected OnItemLongClickedListener onItemLongClickedListener;
     protected final LinkedList<Folder> folders = new LinkedList<>();
+
+    public List<Node> getVisitingItems() {
+        return folders.getLast().getChildren();
+    }
 
     @Nullable
     public OnFolderVisitedListener getOnFolderVisitedListener() {
@@ -47,21 +50,21 @@ class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
     }
 
     @Nullable
-    public OnTextVisitedListener getOnTextVisitedListener() {
-        return onTextVisitedListener;
+    public OnItemClickedListener getItemClickedListener() {
+        return onItemClickedListener;
     }
 
-    public void setOnTextVisitedListener(@Nullable OnTextVisitedListener onTextVisitedListener) {
-        this.onTextVisitedListener = onTextVisitedListener;
+    public void setOnItemClickedListener(@Nullable OnItemClickedListener onItemClickedListener) {
+        this.onItemClickedListener = onItemClickedListener;
     }
 
     @Nullable
-    public OnTextLeftListener getOnTextLeftListener() {
-        return onTextLeftListener;
+    public OnItemLongClickedListener getOnItemLongClickedListener() {
+        return onItemLongClickedListener;
     }
 
-    public void setOnTextLeftListener(@Nullable OnTextLeftListener onTextLeftListener) {
-        this.onTextLeftListener = onTextLeftListener;
+    public void setOnItemLongClickedListener(@Nullable OnItemLongClickedListener onItemLongClickedListener) {
+        this.onItemLongClickedListener = onItemLongClickedListener;
     }
 
     @NonNull
@@ -80,7 +83,13 @@ class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
 
     @SuppressLint("NotifyDataSetChanged")
     public void visitFolder(@NonNull Folder folder) {
+        if (onFolderLeftListener != null) {
+            onFolderLeftListener.onFolderLeft(folders.getLast());
+        }
         folders.add(folder);
+        if (onFolderVisitedListener != null) {
+            onFolderVisitedListener.onFolderVisited(folder);
+        }
         notifyDataSetChanged();
     }
 
@@ -89,7 +98,13 @@ class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
         if (folders.size() <= 1) {
             return;
         }
+        if (onFolderLeftListener != null) {
+            onFolderLeftListener.onFolderLeft(folders.getLast());
+        }
         folders.removeLast();
+        if (onFolderVisitedListener != null) {
+            onFolderVisitedListener.onFolderVisited(folders.getLast());
+        }
         notifyDataSetChanged();
     }
 
@@ -102,12 +117,12 @@ class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.setNode(folders.getLast().getChildren().get(position));
+        holder.setNode(getVisitingItems().get(position));
     }
 
     @Override
     public int getItemCount() {
-        return folders.getLast().getChildren().size();
+        return getVisitingItems().size();
     }
 
     public interface OnFolderVisitedListener {
@@ -118,12 +133,12 @@ class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
         void onFolderLeft(Folder folder);
     }
 
-    public interface OnTextVisitedListener {
-        void onTextVisited(Text text);
+    public interface OnItemClickedListener {
+        void onItemClicked(Node node);
     }
 
-    public interface OnTextLeftListener {
-        void onTextLeft(Text text);
+    public interface OnItemLongClickedListener {
+        void onItemLongClicked(Node node);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -136,26 +151,26 @@ class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
 
         public void setNode(Node node) {
             this.node = node;
-            if (node instanceof Title) {
-                title.setText(((Title) node).getTitle());
+            if (node instanceof Nameable) {
+                title.setText(((Nameable) node).getName());
             }
-            if (node instanceof Description) {
-                description.setText(((Description) node).getDescription());
+            if (node instanceof Describable) {
+                description.setText(((Describable) node).getDescription());
             }
         }
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             itemView.setOnClickListener(view -> {
-                if (node instanceof Folder) {
-                    if (onFolderVisitedListener != null) {
-                        onFolderVisitedListener.onFolderVisited((Folder) node);
-                    }
-                } else if (node instanceof Text) {
-                    if (onTextVisitedListener != null) {
-                        onTextVisitedListener.onTextVisited((Text) node);
-                    }
+                if (onItemClickedListener != null) {
+                    onItemClickedListener.onItemClicked(getNode());
                 }
+            });
+            itemView.setOnLongClickListener(view -> {
+                if (onItemLongClickedListener != null) {
+                    onItemLongClickedListener.onItemLongClicked(getNode());
+                }
+                return true;
             });
             title = itemView.findViewById(R.id.text_fileTitle);
             description = itemView.findViewById(R.id.text_fileDescription);

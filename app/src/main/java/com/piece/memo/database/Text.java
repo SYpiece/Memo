@@ -6,22 +6,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Text extends NodeBase implements Container, Title, Description {
-    public Text(@NonNull Folder folder, @NonNull String title, @NonNull String description) {
-        super(folder, title, description, Type.Text);
-    }
-
-    protected Text(int id, int belong, @NonNull String text, @NonNull String title, @NonNull String description, @NonNull Database database) {
-        super(id, belong, text, title, description, Type.Text, database);
-    }
-
+/**
+ * Text接口定义了文本节点的基本操作和属性。
+ */
+public interface Text extends Container, Nameable, Describable, Node {
     /**
-     * 获取当前文本节点下的所有段落节点。
+     * 获取当前文本节点下的所有段落。
      *
-     * @return 段落节点列表
+     * @return 不可修改的段落列表
      */
     @NonNull
-    public List<Paragraph> getParagraphs() {
+    default List<Paragraph> getParagraphs() {
         List<Node> children = getChildren();
         List<Paragraph> paragraphs = new ArrayList<>(children.size());
         for (Node node : children) {
@@ -33,52 +28,41 @@ public class Text extends NodeBase implements Container, Title, Description {
     }
 
     /**
-     * 将当前文本节点移动到新的父节点下。
+     * 根据给定的父文件夹、标题和描述创建一个新的文本节点。
      *
-     * @param parent 新的父节点
-     * @throws RuntimeException 如果新的父节点不是文件夹类型
+     * @param parent      父文件夹对象
+     * @param title       文本节点的标题
+     * @param description 文本节点的描述
+     * @return 新创建的文本节点对象
      */
+    @NonNull
+    static Text from(@NonNull Folder parent, @NonNull String title, @NonNull String description) {
+        return new TextBase(parent, title, description);
+    }
+}
+
+class TextBase extends NodeBase implements Text {
+    TextBase(@NonNull Folder folder, @NonNull String title, @NonNull String description) {
+        super(folder, Node.Type.Text, "", title, description);
+    }
+
+    TextBase(@NonNull Database database, int id, int belong, @NonNull String text, @NonNull String title, @NonNull String description) {
+        super(database, id, belong, Type.Text, text, title, description);
+    }
+
     @Override
-    public void moveTo(@NonNull Node parent) {
+    public void moveTo(@NonNull Container parent) {
         if (!(parent instanceof Folder)) {
-            throw new RuntimeException();
+            throw new RuntimeException("目标父容器必须是Folder类型");
         }
         super.moveTo(parent);
     }
 
-    /**
-     * 将当前文本节点复制到新的父节点下。
-     *
-     * @param parent 新的父节点
-     * @throws RuntimeException 如果新的父节点不是文件夹类型
-     */
     @Override
-    public void copyTo(@NonNull Node parent) {
+    public void copyTo(@NonNull Container parent) {
         if (!(parent instanceof Folder)) {
-            throw new RuntimeException();
+            throw new RuntimeException("目标父容器必须是Folder类型");
         }
         super.copyTo(parent);
-    }
-
-    @NonNull
-    @Override
-    public String getTitle() {
-        return super.getTitle();
-    }
-
-    @Override
-    public void setTitle(@NonNull String title) {
-        super.setTitle(title);
-    }
-
-    @NonNull
-    @Override
-    public String getDescription() {
-        return super.getDescription();
-    }
-
-    @Override
-    public void setDescription(@NonNull String description) {
-        super.setDescription(description);
     }
 }

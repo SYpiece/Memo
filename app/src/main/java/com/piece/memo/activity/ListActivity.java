@@ -1,5 +1,6 @@
-package com.piece.memo.ui;
+package com.piece.memo.activity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.icu.text.SimpleDateFormat;
 import android.os.Bundle;
@@ -7,6 +8,9 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -18,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.piece.memo.R;
 import com.piece.memo.database.Database;
 import com.piece.memo.database.Folder;
+import com.piece.memo.database.Node;
 import com.piece.memo.database.Text;
 
 import java.util.Date;
@@ -41,21 +46,31 @@ public class ListActivity extends AppCompatActivity {
         final Database database = Database.getInstance();
 
         final TextView titleView = findViewById(R.id.text_listTitle);
-        titleView.setText(database.getRoot().getTitle());
+        titleView.setText(database.getRoot().getName());
 
         final ListAdapter listAdapter = new ListAdapter(database.getRoot());
         recyclerView.setAdapter(listAdapter);
-        listAdapter.setOnFolderVisitedListener(folder -> {
-            listAdapter.visitFolder(folder);
-            titleView.setText(folder.getTitle());
+        listAdapter.setOnFolderVisitedListener(folder -> titleView.setText(folder.getName()));
+        listAdapter.setOnItemClickedListener(node -> {
+            if (node instanceof Folder) {
+                listAdapter.visitFolder((Folder) node);
+            } else if (node instanceof Text) {
+                Intent intent = new Intent(ListActivity.this, TextActivity.class);
+                intent.putExtra("ID", node.getID());
+                startActivity(intent);
+            }
         });
-        listAdapter.setOnTextVisitedListener(text -> {
-            Intent intent = new Intent(ListActivity.this, TextActivity.class);
-            intent.putExtra("ID", text.getID());
-            startActivity(intent);
+        @SuppressLint("NotifyDataSetChanged") final ActivityResultLauncher<Intent>  activityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> listAdapter.notifyDataSetChanged()
+        );
+        listAdapter.setOnItemLongClickedListener(node -> {
+            Intent intent = new Intent(ListActivity.this, MoreActivity.class);
+            intent.putExtra("ID", node.getID());
+            activityResultLauncher.launch(intent);
         });
 
-        final ImageButton addButton = findViewById(R.id.button_add), returnButton = findViewById(R.id.button_return);
+        final ImageButton returnButton = findViewById(R.id.button_return), addButton = findViewById(R.id.button_add);
         addButton.setOnClickListener(view -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(ListActivity.this);
             builder.setTitle("添加文件");
@@ -63,11 +78,11 @@ public class ListActivity extends AppCompatActivity {
             builder.setItems(new String[]{"文件夹", "笔记"}, (dialog, which) -> {
                 switch (which) {
                     case 0: {
-                        new Folder(listAdapter.getVisitingFolder(), "新的文件夹", description).create();
+                        Folder.from(listAdapter.getVisitingFolder(), "新的文件夹", description).create();
                         break;
                     }
                     case 1: {
-                        new Text(listAdapter.getVisitingFolder(), "新的笔记", description).create();
+                        Text.from(listAdapter.getVisitingFolder(), "新的笔记", description).create();
                         break;
                     }
                 }
@@ -75,10 +90,7 @@ public class ListActivity extends AppCompatActivity {
             });
             builder.show();
         });
-        returnButton.setOnClickListener(view -> {
-            listAdapter.leaveFolder();
-            titleView.setText(listAdapter.getVisitingFolder().getTitle());
-        });
+        returnButton.setOnClickListener(view -> listAdapter.leaveFolder());
     }
 }
 

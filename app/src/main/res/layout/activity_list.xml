@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.piece.memo.ui.ListActivity">
+    tools:context="com.piece.memo.activity.ListActivity">
 
 
     <ImageButton
@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="title"
-        android:background="@drawable/title_text_background"
+        android:background="@drawable/title_text_background_down"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

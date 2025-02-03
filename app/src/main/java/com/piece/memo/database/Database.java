@@ -29,16 +29,16 @@ public class Database {
 
     static final String
             fileTable = "FILE_TABLE",
-            textTable = "TEXT_TABLE",
+//            textTable = "TEXT_TABLE",
             idKey = "ID_KEY",
             textKey = "TEXT_KEY",
-            titleKey = "TITLE_KEY",
+            nameKey = "NAME_KEY",
             descriptionKey = "DESCRIPTION_KEY",
             typeKey = "TYPE_KEY",
             belongKey = "BELONG_KEY";
 
     protected final SQLiteDatabase sqLiteDatabase;
-    protected final Folder root = new Folder(0, this);
+    protected final Folder root = new FolderBase(this, 0, 0, "", "", "");
 
     @NonNull
     public Folder getRoot() {
@@ -52,23 +52,18 @@ public class Database {
 
     private void createDatabase() {
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + fileTable + ";");
-        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + textTable + ";");
         sqLiteDatabase.execSQL("CREATE TABLE IF NOT EXISTS " + fileTable + "(" +
                 idKey + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 textKey + " TEXT NOT NULL, " +
-                titleKey + " TEXT NOT NULL, " +
+                nameKey + " TEXT NOT NULL, " +
                 descriptionKey + " TEXT NOT NULL, " +
                 typeKey + " INTEGER NOT NULL, " +
                 belongKey + " INTEGER NOT NULL" +
                 ");");
-        sqLiteDatabase.execSQL("CREATE TABLE IF NOT EXISTS " + textTable + "(" +
-                "ID INTEGER PRIMARY KEY, " +
-                "FILE TEXT NOT NULL" +
-                ");");
     }
 
     @Nullable
-    public Node getNode(long id) {
+    public Node getNode(int id) {
         if (id == 0) {
             return root;
         }
@@ -76,11 +71,11 @@ public class Database {
             if (cursor != null && cursor.moveToNext()) {
                 return new NodePack(
                         cursor.getInt(cursor.getColumnIndexOrThrow(idKey)),
-                        cursor.getString(cursor.getColumnIndexOrThrow(textKey)),
-                        cursor.getString(cursor.getColumnIndexOrThrow(titleKey)),
-                        cursor.getString(cursor.getColumnIndexOrThrow(descriptionKey)),
+                        cursor.getInt(cursor.getColumnIndexOrThrow(belongKey)),
                         Node.Type.fromInteger(cursor.getInt(cursor.getColumnIndexOrThrow(typeKey))),
-                        cursor.getInt(cursor.getColumnIndexOrThrow(belongKey))
+                        cursor.getString(cursor.getColumnIndexOrThrow(textKey)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(nameKey)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(descriptionKey))
                 ).unpack();
             }
         }
@@ -93,18 +88,18 @@ public class Database {
      * @param node 父节点
      * @return 子节点列表
      */
-    protected List<Node> queryChildren(NodeBase node) {
+    protected List<Node> queryChildren(Container node) {
         List<Node> nodes = new ArrayList<>();
         try (Cursor cursor = sqLiteDatabase.query(fileTable, null, belongKey + " = ?", new String[] { String.valueOf(node.getID()) }, null, null, null)) {
             if (cursor != null) {
                 while (cursor.moveToNext()) {
                     nodes.add(new NodePack(
                             cursor.getInt(cursor.getColumnIndexOrThrow(idKey)),
-                            cursor.getString(cursor.getColumnIndexOrThrow(textKey)),
-                            cursor.getString(cursor.getColumnIndexOrThrow(titleKey)),
-                            cursor.getString(cursor.getColumnIndexOrThrow(descriptionKey)),
+                            cursor.getInt(cursor.getColumnIndexOrThrow(belongKey)),
                             Node.Type.fromInteger(cursor.getInt(cursor.getColumnIndexOrThrow(typeKey))),
-                            cursor.getInt(cursor.getColumnIndexOrThrow(belongKey))
+                            cursor.getString(cursor.getColumnIndexOrThrow(textKey)),
+                            cursor.getString(cursor.getColumnIndexOrThrow(nameKey)),
+                            cursor.getString(cursor.getColumnIndexOrThrow(descriptionKey))
                     ).unpack());
                 }
             }
@@ -117,18 +112,18 @@ public class Database {
      *
      * @param node 要插入的节点
      */
-    protected int insertNode(@NonNull NodeBase node) {
+    int insertNode(@NonNull NodeBase node) {
         ContentValues values = new ContentValues();
         values.put(textKey, node.getText());
-        values.put(titleKey, node.getTitle());
+        values.put(nameKey, node.getName());
         values.put(descriptionKey, node.getDescription());
         values.put(typeKey, Node.Type.toInteger(node.getType()));
-        values.put(belongKey, node.getParentID());
-        long id = sqLiteDatabase.insert(fileTable, null, values);
+        values.put(belongKey, node.getBelong());
+        int id = (int) sqLiteDatabase.insert(fileTable, null, values);
         if (id == -1) {
             throw new RuntimeException();
         }
-        return (int) id;
+        return id;
     }
 
     /**
@@ -136,10 +131,10 @@ public class Database {
      *
      * @param node 要更新的节点
      */
-    protected void updateNode(@NonNull NodeBase node) {
+    void updateNode(@NonNull NodeBase node) {
         ContentValues values = new ContentValues();
         values.put(textKey, node.getText());
-        values.put(titleKey, node.getTitle());
+        values.put(nameKey, node.getName());
         values.put(descriptionKey, node.getDescription());
         sqLiteDatabase.update(fileTable, values, idKey + " = ?", new String[] { String.valueOf(node.getID()) });
     }
@@ -150,7 +145,7 @@ public class Database {
      * @param node   要移动的节点
      * @param parent 新的父节点
      */
-    protected void moveNode(@NonNull NodeBase node, @NonNull NodeBase parent) {
+    void moveNode(@NonNull NodeBase node, @NonNull Container parent) {
         ContentValues values = new ContentValues();
         values.put(belongKey, parent.getID());
         sqLiteDatabase.update(fileTable, values, idKey + " = ?", new String[] { String.valueOf(node.getID()) });
@@ -162,10 +157,10 @@ public class Database {
      * @param node   要复制的节点
      * @param parent 新的父节点
      */
-    protected void copyNode(@NonNull NodeBase node, @NonNull NodeBase parent) {
+    void copyNode(@NonNull NodeBase node, @NonNull Container parent) {
         ContentValues values = new ContentValues();
         values.put(textKey, node.getText());
-        values.put(titleKey, node.getTitle());
+        values.put(nameKey, node.getName());
         values.put(descriptionKey, node.getDescription());
         values.put(typeKey, NodeBase.Type.toInteger(node.getType()));
         values.put(belongKey, parent.getID());
@@ -177,7 +172,7 @@ public class Database {
      *
      * @param node 要删除的节点
      */
-    protected void deleteNode(@NonNull Node node) {
+    void deleteNode(@NonNull NodeBase node) {
         sqLiteDatabase.delete(fileTable, idKey + " = ?", new String[] { String.valueOf(node.getID()) });
     }
 
@@ -186,28 +181,28 @@ public class Database {
         protected final String text, title, description;
         protected final Node.Type type;
 
-        public NodePack(int id, @NonNull String text, @NonNull String title, @NonNull String description, @NonNull NodeBase.Type type, int belong) {
+        public NodePack(int id, int belong, @NonNull Node.Type type, @NonNull String text, @NonNull String title, @NonNull String description) {
             this.id = id;
+            this.belong = belong;
+            this.type = type;
             this.text = text;
             this.title = title;
             this.description = description;
-            this.type = type;
-            this.belong = belong;
         }
 
-        public NodeBase unpack() {
-            NodeBase node;
+        public Node unpack() {
+            Node node;
             switch (type) {
                 case Folder: {
-                    node = new Folder(id, belong, text, title, description, Database.this);
+                    node = new FolderBase(Database.this, id, belong, text, title, description);
                     break;
                 }
                 case Text: {
-                    node = new Text(id, belong, text, title, description, Database.this);
+                    node = new TextBase(Database.this, id, belong, text, title, description);
                     break;
                 }
                 case Paragraph: {
-                    node = new Paragraph(id, belong, text, title, description, Database.this);
+                    node = new ParagraphBase(Database.this, id, belong, text, title, description);
                     break;
                 }
                 default: {

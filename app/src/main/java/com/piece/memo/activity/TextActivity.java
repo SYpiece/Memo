@@ -1,6 +1,7 @@
-package com.piece.memo.ui;
+package com.piece.memo.activity;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageButton;
 
 import androidx.activity.EdgeToEdge;
@@ -32,11 +33,11 @@ public class TextActivity extends AppCompatActivity {
             return insets;
         });
 
-        final RecyclerView paragraphList = findViewById(R.id.list_paragraph);
+        final RecyclerView paragraphList = findViewById(R.id.text_list_paragraph);
         paragraphList.setLayoutManager(new LinearLayoutManager(this));
         paragraphList.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
-        long id = Objects.requireNonNull(getIntent().getExtras()).getInt("ID", -1);
+        int id = Objects.requireNonNull(getIntent().getExtras()).getInt("ID", -1);
         if (id == -1) {
             finish();
             return;
@@ -51,11 +52,21 @@ public class TextActivity extends AppCompatActivity {
 
         ImageButton addButton = findViewById(R.id.text_button_add), removeButton = findViewById(R.id.text_button_remove);
         addButton.setOnClickListener(v -> {
-            new Paragraph(textAdapter.getText()).create();
+            Paragraph.from(textAdapter.getText(), "").create();
             textAdapter.notifyItemInserted(textAdapter.getItemCount());
         });
         removeButton.setOnClickListener(v -> {
-
+            View view = getCurrentFocus();
+            if (view == null) {
+                return;
+            }
+            Object object = getCurrentFocus().getTag();
+            if (!(object instanceof TextAdapter.ViewHolder)) {
+                return;
+            }
+            TextAdapter.ViewHolder viewHolder = (TextAdapter.ViewHolder) object;
+            viewHolder.getParagraph().delete();
+            textAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
         });
     }
 }

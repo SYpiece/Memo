@@ -2,44 +2,45 @@ package com.piece.memo.database;
 
 import androidx.annotation.NonNull;
 
-public class Paragraph extends NodeBase {
-    public Paragraph(@NonNull Text text) {
-        super(text, "", NodeBase.Type.Paragraph);
-    }
-
-    public Paragraph(@NonNull Text text, @NonNull String t) {
-        super(text, t, NodeBase.Type.Paragraph);
-    }
-
-    protected Paragraph(int id, int belong, @NonNull String text, @NonNull String title, @NonNull String description, @NonNull Database database) {
-        super(id, belong, text, title, description, NodeBase.Type.Paragraph, database);
-    }
-
+/**
+ * Paragraph接口定义了段落的基本操作和属性。
+ */
+public interface Paragraph extends Editable, Node {
     /**
-     * 将当前段落节点复制到新的父节点下。
+     * 根据给定的父文本和文本内容创建一个新的段落。
      *
-     * @param parent 新的父节点
-     * @throws RuntimeException 如果新的父节点不是文本类型
+     * @param parent 父文本对象
+     * @param text   段落的文本内容
+     * @return 新创建的段落对象
      */
-    @Override
-    public void copyTo(@NonNull Node parent) {
-        if (!(parent instanceof Text)) {
-            throw new RuntimeException();
-        }
-        super.copyTo(parent);
+    @NonNull
+    static Paragraph from(@NonNull Text parent, @NonNull String text) {
+        return new ParagraphBase(parent, text);
+    }
+}
+
+class ParagraphBase extends NodeBase implements Paragraph {
+    ParagraphBase(@NonNull Text parent, @NonNull String text) {
+        super(parent, Type.Paragraph, text, "", "");
     }
 
-    /**
-     * 将当前段落节点移动到新的父节点下。
-     *
-     * @param parent 新的父节点
-     * @throws RuntimeException 如果新的父节点不是文本类型
-     */
+    ParagraphBase(@NonNull Database database, int id, int belong, @NonNull String text, @NonNull String title, @NonNull String description) {
+        super(database, id, belong, Type.Paragraph, text, title, description);
+    }
+
     @Override
-    public void moveTo(@NonNull Node parent) {
+    public void moveTo(@NonNull Container parent) {
         if (!(parent instanceof Text)) {
-            throw new RuntimeException();
+            throw new RuntimeException("目标父容器必须是Text类型");
         }
         super.moveTo(parent);
+    }
+
+    @Override
+    public void copyTo(@NonNull Container parent) {
+        if (!(parent instanceof Text)) {
+            throw new RuntimeException("目标父容器必须是Text类型");
+        }
+        super.copyTo(parent);
     }
 }

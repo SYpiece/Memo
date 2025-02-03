@@ -1,6 +1,5 @@
-package com.piece.memo.ui;
+package com.piece.memo.activity;
 
-import android.graphics.Color;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -44,7 +43,7 @@ public class TextAdapter extends RecyclerView.Adapter<TextAdapter.ViewHolder> {
         return text.getParagraphs().size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder {
         protected Paragraph paragraph;
         protected final EditText paragraphText;
 
@@ -60,14 +59,8 @@ public class TextAdapter extends RecyclerView.Adapter<TextAdapter.ViewHolder> {
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            itemView.setOnFocusChangeListener((v, hasFocus) -> {
-                if (hasFocus) {
-                    v.setBackgroundColor(Color.BLUE);
-                } else {
-                    v.setBackgroundColor(Color.WHITE);
-                }
-            });
             paragraphText = itemView.findViewById(R.id.text_paragraph);
+            paragraphText.setTag(this);
             paragraphText.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
